@@ -85,7 +85,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'require',
+            'sslmode' => 'disable',
             'options' => [
                 'sslrootcert' => env('DB_SSLROOTCERT', ''),
                 'sslcert' => env('DB_SSLCERT', ''),

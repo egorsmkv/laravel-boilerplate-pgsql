@@ -3,7 +3,7 @@ version: '3'
 tasks:
   build:
     cmds:
-      - docker buildx build --force-rm --load --tag laravel_app_mariadb_dev:1.0 .
+      - docker buildx build --force-rm --load --tag laravel_app_postgresdb_dev:1.0 .
       - docker image prune -f
 
   build-prune:

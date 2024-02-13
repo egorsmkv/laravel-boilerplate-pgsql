@@ -1,4 +1,4 @@
-# Laravel Boilerplate + MariaDB
+# Laravel Boilerplate + PostgreSQL
 
 > [!NOTE]
 > It must:

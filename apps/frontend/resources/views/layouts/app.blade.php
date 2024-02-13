@@ -81,7 +81,7 @@
                     &bull;
                     <a href="http://{{ request()->getHost() }}:8000" class="hover:underline">Buggregator</a>
                     &bull;
-                    <a href="http://{{ request()->getHost() }}:8081" class="hover:underline">adminer</a>
+                    <a href="http://{{ request()->getHost() }}:8081" class="hover:underline">pgweb</a>
                 @else
                     We are in production.
                 @endif
