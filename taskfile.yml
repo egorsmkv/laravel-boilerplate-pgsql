@@ -46,7 +46,7 @@ tasks:
     cmds:
       - docker exec -it apps_dev php artisan lang:update
 
-  phpcs-fix:
+  fix-phpcs:
     cmds:
       - docker exec -it apps_dev vendor/bin/php-cs-fixer fix --config phpcs.php
 
