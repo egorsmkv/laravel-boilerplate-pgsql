@@ -1,0 +1,210 @@
+version: '3'
+
+# include:
+#  - docker-compose.rpc.yml
+
+services:
+  apps:
+    image: laravel_app_mariadb_prod:1.0
+    container_name: apps_prod
+    restart: always
+    env_file:
+      - prod.env
+    command:
+      - php
+      - artisan
+      - octane:roadrunner
+      - --rr-config
+      - /app/frontend/.rr.yaml
+    depends_on:
+      - mariadb
+      - dragonflydb
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: 256M
+        max-file: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  queue:
+    image: laravel_app_mariadb_prod:1.0
+    container_name: queue_prod
+    restart: always
+    env_file:
+      - prod.env
+    command:
+      - php
+      - artisan
+      - horizon
+    depends_on:
+      - mariadb
+      - dragonflydb
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: 100M
+        max-file: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  schedule:
+    image: laravel_app_mariadb_prod:1.0
+    container_name: schedule_prod
+    restart: always
+    env_file:
+      - prod.env
+    command:
+      - php
+      - artisan
+      - schedule:work
+    depends_on:
+      - mariadb
+      - dragonflydb
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: 100M
+        max-file: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  caddy:
+    image: laravel_app_mariadb_prod:1.0
+    container_name: caddy_prod
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    command:
+      - /app/caddy
+      - run
+      - --config
+      - /app/Caddyfile
+    depends_on:
+      - apps
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: 64M
+        max-file: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  mariadb:
+    image: mariadb:11.2
+    container_name: mariadb_prod
+    restart: always
+    env_file:
+      - prod.env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  dragonflydb:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonflydb_prod
+    restart: always
+    command: dragonfly --logtostderr --requirepass L2hgheewayei5eechW2
+    volumes:
+      - dragonflydb_data:/data
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      memlock: -1
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio_prod
+    restart: always
+    command: [
+      "server",
+      "--console-address",
+      ":9001",
+      "/data"
+    ]
+    env_file:
+      - prod.env
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - app_prod
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  dragonflydb_data:
+    name: dragonflydb_prod_data
+  minio_data:
+    name: minio_prod_data
+  mariadb_data:
+    name: mariadb_prod_data
+
+networks:
+  app_prod:
+    driver: bridge
+    name: app_prod

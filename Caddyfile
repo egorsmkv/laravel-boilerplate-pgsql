@@ -1,0 +1,16 @@
+{
+	debug
+}
+
+:80 {
+	log {
+		output stdout
+		format console
+		level DEBUG
+	}
+
+	reverse_proxy apps:8080 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+}

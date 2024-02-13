@@ -1,0 +1,199 @@
+version: '3'
+
+# include:
+  # - docker-compose.rpc.yml
+
+services:
+  apps:
+    image: laravel_app_mariadb_dev:1.0
+    container_name: apps_dev
+    env_file:
+      - dev.env
+    volumes:
+      - ./custom.ini:/usr/local/etc/php/conf.d/custom.ini
+      - ./apps:/app
+    # command: 
+    #   - composer
+    #   - install
+    command:
+      - php
+      - artisan
+      - serve
+      - --host=0.0.0.0
+      - --port=8080
+    networks:
+      - app_dev
+    depends_on:
+      - mariadb
+      - dragonflydb
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  caddy:
+    image: caddy:2.7
+    container_name: caddy_dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./apps:/app
+      - caddy_data:/data
+    networks:
+      - app_dev
+    depends_on:
+      - apps
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  mariadb:
+    image: mariadb:11.2
+    container_name: mariadb_dev
+    env_file:
+      - dev.env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - app_dev
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  adminer:
+    image: adminer:4.8.1-standalone
+    container_name: adminer_dev
+    env_file:
+      - dev.env
+    networks:
+      - app_dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mariadb
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  buggregator:
+    image: ghcr.io/buggregator/server:latest
+    container_name: buggregator_dev
+    networks:
+      - app_dev
+    ports:
+      - "8000:8000"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  dragonflydb:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonflydb_dev
+    command: dragonfly --logtostderr --requirepass L2hgheewayei5eechW2
+    volumes:
+      - dragonflydb_data:/data
+    networks:
+      - app_dev
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      memlock: -1
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio_dev
+    command: [
+      "server",
+      "--console-address",
+      ":9001",
+      "/data"
+    ]
+    env_file:
+      - dev.env
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - app_dev
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  caddy_data:
+    name: caddy_dev_data
+  dragonflydb_data:
+    name: dragonflydb_dev_data
+  minio_data:
+    name: minio_dev_data
+  mariadb_data:
+    name: mariadb_dev_data
+
+networks:
+   app_dev:
+     driver: bridge
+     name: app_dev

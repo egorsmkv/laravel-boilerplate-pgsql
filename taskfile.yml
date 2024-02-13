@@ -1,0 +1,72 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - docker buildx build --force-rm --load --tag laravel_app_mariadb_dev:1.0 .
+      - docker image prune -f
+
+  build-prune:
+    cmds:
+      - docker buildx prune -f
+
+  install:
+    cmds:
+      - docker exec -it apps_dev sh -c 'composer install && php artisan telescope:publish && php artisan horizon:publish'
+      - docker exec -it apps_dev php artisan key:generate
+      - docker exec -it apps_dev php artisan migrate
+
+  up:
+    cmds:
+      - docker compose up -d
+
+  queue:
+    cmds:
+      - docker exec -it apps_dev php artisan horizon
+
+  down:
+    cmds:
+      - docker compose down
+
+  fix-perms:
+    cmds:
+      - chmod -R 777 apps/frontend/storage
+
+  bun-dev:
+    cmds:
+      - cd apps/frontend && bun run dev
+    env:
+      HMR_HOST: d.yehors.com
+
+  bun-build:
+    cmds:
+      - cd apps/frontend && bun run build
+
+  lang-update:
+    cmds:
+      - docker exec -it apps_dev php artisan lang:update
+
+  phpcs-fix:
+    cmds:
+      - docker exec -it apps_dev vendor/bin/php-cs-fixer fix --config phpcs.php
+
+  phpstan:
+    cmds:
+      - docker exec -it apps_dev ./vendor/bin/phpstan analyse --memory-limit=256M
+
+  check-security:
+    cmds:
+      - docker exec -it apps_dev security-checker security:check composer.lock
+      - docker exec -it apps_dev composer audit
+
+  gen-explain-queries:
+    cmds:
+      - docker exec -it apps_dev app:gen-explain-queries 2 json
+
+  logs:
+    cmds:
+      - docker compose logs -f
+
+  console:
+    cmds:
+      - docker exec -it apps_dev sh
