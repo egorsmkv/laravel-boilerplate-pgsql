@@ -5,7 +5,7 @@ tasks:
     cmds:
       - cp -r ../apps .
       - cp -r ./rr/rr apps/frontend
-      - docker buildx build --force-rm --load --build-arg CADDY_ARCH=amd64 --tag laravel_app_mariadb_prod:1.0 .
+      - docker buildx build --force-rm --load --build-arg CADDY_ARCH=amd64 --tag laravel_app_postgresdb_prod:1.0 .
       - docker image prune -f
       - rm -rf ./apps
 
