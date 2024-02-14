@@ -18,7 +18,7 @@ services:
       - /app/frontend/.rr.yaml
     depends_on:
       - postgresdb
-      - dragonflydb
+      - redis
     networks:
       - app_prod
     logging:
@@ -47,7 +47,7 @@ services:
       - horizon
     depends_on:
       - postgresdb
-      - dragonflydb
+      - redis
     networks:
       - app_prod
     logging:
@@ -76,7 +76,7 @@ services:
       - schedule:work
     depends_on:
       - postgresdb
-      - dragonflydb
+      - redis
     networks:
       - app_prod
     logging:
@@ -147,13 +147,18 @@ services:
         limits:
           memory: 512M
 
-  dragonflydb:
-    image: ghcr.io/dragonflydb/dragonfly:v1.14.1
-    container_name: dragonflydb_prod
-    restart: always
-    command: dragonfly --logtostderr --requirepass L2hgheewayei5eechW2
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis_prod
+    command: [
+      "redis-server",
+      "--appendonly",
+      "yes",
+      "--requirepass",
+      "L2hgheewayei5eechW2"
+    ]
     volumes:
-      - dragonflydb_data:/data
+      - redis_data:/data
     networks:
       - app_prod
     logging:
@@ -197,8 +202,8 @@ services:
           memory: 512M
 
 volumes:
-  dragonflydb_data:
-    name: dragonflydb_prod_data
+  redis_data:
+    name: redis_prod_data
   minio_data:
     name: minio_prod_data
   postgresdb_data:
