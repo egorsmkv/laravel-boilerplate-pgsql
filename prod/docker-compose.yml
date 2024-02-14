@@ -5,7 +5,7 @@ version: '3'
 
 services:
   apps:
-    image: laravel_app_mariadb_prod:1.0
+    image: laravel_app_postgresdb_prod:1.0
     container_name: apps_prod
     restart: always
     env_file:
@@ -17,7 +17,7 @@ services:
       - --rr-config
       - /app/frontend/.rr.yaml
     depends_on:
-      - mariadb
+      - postgresdb
       - dragonflydb
     networks:
       - app_prod
@@ -36,7 +36,7 @@ services:
           memory: 512M
 
   queue:
-    image: laravel_app_mariadb_prod:1.0
+    image: laravel_app_postgresdb_prod:1.0
     container_name: queue_prod
     restart: always
     env_file:
@@ -46,7 +46,7 @@ services:
       - artisan
       - horizon
     depends_on:
-      - mariadb
+      - postgresdb
       - dragonflydb
     networks:
       - app_prod
@@ -65,7 +65,7 @@ services:
           memory: 512M
 
   schedule:
-    image: laravel_app_mariadb_prod:1.0
+    image: laravel_app_postgresdb_prod:1.0
     container_name: schedule_prod
     restart: always
     env_file:
@@ -75,7 +75,7 @@ services:
       - artisan
       - schedule:work
     depends_on:
-      - mariadb
+      - postgresdb
       - dragonflydb
     networks:
       - app_prod
@@ -94,7 +94,7 @@ services:
           memory: 128M
 
   caddy:
-    image: laravel_app_mariadb_prod:1.0
+    image: laravel_app_postgresdb_prod:1.0
     container_name: caddy_prod
     restart: always
     ports:
@@ -123,14 +123,14 @@ services:
         limits:
           memory: 128M
 
-  mariadb:
-    image: mariadb:11.2
-    container_name: mariadb_prod
+  postgresdb:
+    image: postgres:16.2-alpine3.19
+    container_name: postgres_prod
     restart: always
     env_file:
       - prod.env
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - postgresdb_data:/var/lib/postgresql
     networks:
       - app_prod
     logging:
@@ -148,7 +148,7 @@ services:
           memory: 512M
 
   dragonflydb:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    image: ghcr.io/dragonflydb/dragonfly:v1.14.1
     container_name: dragonflydb_prod
     restart: always
     command: dragonfly --logtostderr --requirepass L2hgheewayei5eechW2
@@ -164,7 +164,7 @@ services:
       memlock: -1
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-01-31T20-20-33Z
     container_name: minio_prod
     restart: always
     command: [
@@ -201,8 +201,8 @@ volumes:
     name: dragonflydb_prod_data
   minio_data:
     name: minio_prod_data
-  mariadb_data:
-    name: mariadb_prod_data
+  postgresdb_data:
+    name: postgresdb_prod_data
 
 networks:
   app_prod:
