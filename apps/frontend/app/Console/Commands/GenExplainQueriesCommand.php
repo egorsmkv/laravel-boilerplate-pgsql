@@ -4,13 +4,12 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
-use Laravel\Telescope\Contracts\EntriesRepository;
-use Laravel\Telescope\EntryType;
-use Laravel\Telescope\Storage\EntryQueryOptions;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class GenExplainQueriesCommand extends Command
 {
-    protected $signature = 'app:gen-explain-queries {time_min_ms} {format}';
+    protected $signature = 'app:gen-explain-queries {format}';
     protected $description = 'Generate EXPLAIN ANALYZE queries from Telescope entries.';
 
     /**
@@ -21,15 +20,9 @@ class GenExplainQueriesCommand extends Command
         'information_schema.tables',
     ];
 
-    public function handle(EntriesRepository $storage): void
+    public function handle(): void
     {
-        $timeMin = $this->argument('time_min_ms');
         $format = $this->argument('format');
-
-        $entries = $storage->get(
-            EntryType::QUERY,
-            (new EntryQueryOptions)->limit(50),
-        )->reverse();
 
         if ($format === 'json') {
             $prependSQL = 'EXPLAIN (ANALYZE, COSTS, VERBOSE, BUFFERS, FORMAT JSON)';
@@ -37,19 +30,19 @@ class GenExplainQueriesCommand extends Command
             $prependSQL = 'EXPLAIN (ANALYZE, COSTS, VERBOSE, BUFFERS)';
         }
 
-        foreach ($entries as $entry) {
-            if ($entry->content['time'] < $timeMin) {
-                continue;
-            }
+        DB::table('telescope_entries')->where('type', 'query')->orderBy('sequence')->chunk(50, function (Collection $entries) use ($prependSQL) {
+            foreach ($entries as $entry) {
+                $content = json_decode($entry->content, true);
 
-            if (Str::contains($entry->content['sql'], $this->ignoredSubStrings)) {
-                continue;
-            }
+                if (Str::contains($content['sql'], $this->ignoredSubStrings)) {
+                    continue;
+                }
 
-            $this->info("\t" . '-- ' . $entry->content['file'] . ':' . $entry->content['line']);
-            $this->info("\t" . $prependSQL . ' ' . $entry->content['sql']);
-            $this->comment("\n\n***");
-            $this->comment('');
-        }
+                $this->info('-- ' . $content['file'] . ':' . $content['line']);
+                $this->info($prependSQL . ' ' . $content['sql']);
+                $this->comment("\n\n***");
+                $this->comment('');
+            }
+        });
     }
 }
