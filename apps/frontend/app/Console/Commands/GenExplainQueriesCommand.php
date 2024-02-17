@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class GenExplainQueriesCommand extends Command
 {
@@ -31,7 +31,9 @@ class GenExplainQueriesCommand extends Command
         }
 
         DB::table('telescope_entries')->where('type', 'query')->orderBy('sequence')->chunk(50, function (Collection $entries) use ($prependSQL) {
+            /** @var \stdClass $entry */
             foreach ($entries as $entry) {
+                /** @var array<string> $content */
                 $content = json_decode($entry->content, true);
 
                 if (Str::contains($content['sql'], $this->ignoredSubStrings)) {
