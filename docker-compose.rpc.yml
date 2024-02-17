@@ -21,7 +21,7 @@ services:
           memory: 64M
 
   # go-hello:
-  #   image: go-hello:1.0
+  #   image: go_hello:1.0
   #   container_name: go_hello_dev
   #   networks:
   #     - app_dev
